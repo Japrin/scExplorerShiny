@@ -31,4 +31,5 @@ getPackage(pkg = 'shinyTree', github = "shinyTree/shinyTree")
 library("sscVis")
 
 source("./lib/plot.func.R")
+source("./lib/utils.R")
 

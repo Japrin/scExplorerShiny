@@ -60,11 +60,11 @@ loadDataSet <- function(LoadData_selected) {
       meta.perCell.filepath <- sprintf("./data/%s", g.dataset_map[dataset,"meta.perCell"])
       ###if(file.exists(exp.perMini.filepath) && file.exists(exp.perMeta.filepath)){
       if(file.exists(exp.perMini.filepath)){  
-        ret.dat.list[[dataset]] <- list("sce.perMini"=readRDS(exp.perMini.filepath),
-                                      #"sce.perMeta"=readRDS(exp.perMeta.filepath),
-                                      "geneDesc"=readRDS(sprintf("./data/%s", g.dataset_map[dataset,"geneDesc"])),
+        ret.dat.list[[dataset]] <- list("sce.perMini"=reformatData(sce=readRDS(exp.perMini.filepath)),
+                                      "geneDesc"=reformatData(geneDesc.tb=readRDS(sprintf("./data/%s",g.dataset_map[dataset,"geneDesc"]))),
                                       "geneTableLong"=readRDS(sprintf("./data/%s", g.dataset_map[dataset,"geneTableLong"])),
-                                      "meta.perCell"=readRDS(meta.perCell.filepath))
+                                      "colSet"=reformatData(colSet=readRDS(sprintf("./data/%s", g.dataset_map[dataset,"colSet"]))),
+                                      "meta.perCell"=reformatData(meta.tb=readRDS(meta.perCell.filepath)))
         LoadData.status <- rbind(LoadData.status, c(dataset, "Succeeded"))
       }else{
         LoadData.status <- rbind(LoadData.status, c(dataset, "Failed"))
@@ -102,14 +102,15 @@ g.dat.list[["SampleData"]] <- list("sce.perMini"=readRDS("./data/panC.sample.per
                                    #"sce.perMeta"=readRDS("./data/panC.sample.perMetaCluster.R3.4.rds"),
                                    "geneDesc"=readRDS("./data/panC.geneDesc.sample.R3.4.rds"),
                                    "geneTableLong"=readRDS("./data/panC.geneTable.sample.cancerType.R3.4.rds"),
+                                   "colSet"=readRDS("./data/panC.freq.all.colSet.list.rds"),
                                    "meta.perCell"=readRDS("./data/panC.metaInfo.perCell.SampleData.rds"))
 #g.dat.list[["metaInfo"]] <- readRDS("./data/panC.metaInfo.perCell.rds")
 ## push to ghe Global Env
 assign("g.dat.list",g.dat.list,envir = .GlobalEnv)
 
-g.colSet <- readRDS("./data/panC.freq.all.colSet.list.rds")
-#g.colSet$cancerType["panC"] <- "#f2f3f4"
-#saveRDS(g.colSet,"./data/panC.freq.all.colSet.list.rds",version = 2)
+#g.colSet <- readRDS("./data/panC.freq.all.colSet.list.rds")
+###g.colSet$cancerType["panC"] <- "#f2f3f4"
+###saveRDS(g.colSet,"./data/panC.freq.all.colSet.list.rds",version = 2)
 
 
 
@@ -160,14 +161,15 @@ server <- function(input, output, session) {
   # output$EnvirementBB <- renderPrint({
   #   #sessionInfo()
   # })
-  # output$EnvirementCC <- renderPrint({
-  #   #R.utils::System$getHostname()
-  #   #system("ifconfig", intern=TRUE)
-  #   #system("pwd", intern=TRUE)
-  #   #print(sce.perMini)
-  #   #print(sce.perMeta)
-  #   #rjson::fromJSON(readLines("http://api.hostip.info/get_json.php", warn=F))$ip
-  # })
+### output$EnvirementCC <- renderPrint({
+###   #R.utils::System$getHostname()
+###   #system("ifconfig", intern=TRUE)
+###   system("pwd", intern=TRUE)
+###   print(InputValue$debug.list)
+###   #print(.GlobalEnv$exp.perMini.filepath)
+###   #print(sce.perMeta)
+###   #rjson::fromJSON(readLines("http://api.hostip.info/get_json.php", warn=F))$ip
+### })
 
   # Interactive load button----
   observeEvent(input$LoadButton, {
@@ -308,8 +310,12 @@ server <- function(input, output, session) {
     #sce.perMeta = .GlobalEnv$g.dat.list[["SampleData"]][["sce.perMeta"]],
     geneDesc = .GlobalEnv$g.dat.list[["SampleData"]][["geneDesc"]],
     geneTableLong = .GlobalEnv$g.dat.list[["SampleData"]][["geneTableLong"]],
-    meta.perCell = .GlobalEnv$g.dat.list[["SampleData"]][["meta.perCell"]]
+    colSet = .GlobalEnv$g.dat.list[["SampleData"]][["colSet"]],
+    meta.perCell = .GlobalEnv$g.dat.list[["SampleData"]][["meta.perCell"]],
     ####
+    ##### for debug #####
+    debug.list=list()
+    #####
 
   )
 
@@ -360,6 +366,7 @@ server <- function(input, output, session) {
     #InputValue$sce.perMeta <- .GlobalEnv$g.dat.list[[InputValue$dataset]][["sce.perMeta"]]
     InputValue$geneDesc <- .GlobalEnv$g.dat.list[[InputValue$dataset]][["geneDesc"]]
     InputValue$geneTableLong <- .GlobalEnv$g.dat.list[[InputValue$dataset]][["geneTableLong"]]
+    InputValue$colSet <- .GlobalEnv$g.dat.list[[InputValue$dataset]][["colSet"]]
     
   })
 
@@ -437,7 +444,7 @@ server <- function(input, output, session) {
                                 vector.friendly=F,
                                 p.ncol=input$PlotPar_ncol2,
                                 theme.use=theme_void,
-                                size=input$Embedding_dotsize2,colSet = g.colSet,
+                                size=input$Embedding_dotsize2,colSet = InputValue$colSet,
                                 label=if(input$Embedding_metaInfo_labelSize==0) NULL else input$Embedding_metaInfo_labelSize,
                                 #plotDensity = F,
                                 splitBy = if(input$Embedding_metaInfo_splitBy=="None") NULL else input$Embedding_metaInfo_splitBy,
@@ -532,7 +539,7 @@ server <- function(input, output, session) {
                                   vector.friendly=T,
                                   p.ncol=input$PlotPar_ncol2,
                                   theme.use=theme_void,
-                                  size=input$Embedding_dotsize2,colSet = g.colSet,
+                                  size=input$Embedding_dotsize2,colSet = InputValue$colSet,
                                   label=if(input$Embedding_metaInfo_labelSize==0) NULL else input$Embedding_metaInfo_labelSize,
                                   #plotDensity = F,
                                   splitBy = if(input$Embedding_metaInfo_splitBy=="None") NULL else input$Embedding_metaInfo_splitBy,
@@ -645,6 +652,7 @@ server <- function(input, output, session) {
     tb.col.show <- c("geneSymbol",
                      ##"meta.cluster",
                      "cluster.name","comb.ES","comb.padj","sig",
+                     "OR.comb","OR.comb.adj.pvalue",
                      "comb.ES.rank", "comb.positive.freq", 
                      "cancerType.sig.N", "cancerType.sig.freq", "cancerType.total.N", 
                      "cancerType.ES.max", "cancerType.ES.max.p.adj",
@@ -652,6 +660,8 @@ server <- function(input, output, session) {
                      "dataset.ES.max", "dataset.ES.max.p.adj",
                      grep("^geneSet",col.available,perl = T,value = T))
     tb.col.show <- intersect(tb.col.show,col.available)
+    col.double <- tb.col.show[sapply(tb.col.show,function(x){ is.numeric(x.tb[[x]]) && !is.integer(x.tb[[x]]) && !grepl("freq",x,perl=T) })]
+    col.perc <- tb.col.show[sapply(tb.col.show,function(x){ is.numeric(x.tb[[x]]) && !is.integer(x.tb[[x]]) && grepl("freq",x,perl=T) })]
     DT::datatable(
       x.tb[, tb.col.show, with =F],
       rownames = F,
@@ -664,10 +674,12 @@ server <- function(input, output, session) {
       ),
       autoHideNavigation = F
     ) %>%
-      DT::formatRound(c("comb.ES","comb.padj",
-                        "cancerType.ES.max","cancerType.ES.max.p.adj",
-                        "dataset.ES.max","dataset.ES.max.p.adj"),4) %>%
-      DT::formatPercentage(c("comb.positive.freq","cancerType.sig.freq","dataset.sig.freq"),2)
+      DT::formatRound(col.double,2) %>%
+      DT::formatPercentage(col.perc,2)
+#      DT::formatRound(c("comb.ES","comb.padj",
+#                        "cancerType.ES.max","cancerType.ES.max.p.adj",
+#                        "dataset.ES.max","dataset.ES.max.p.adj"),4) %>%
+#      DT::formatPercentage(c("comb.positive.freq","cancerType.sig.freq","dataset.sig.freq"),2)
     # {
     #   DT::datatable(data.frame(Warnings = "There needs at least two groups!"))
     # }
@@ -701,7 +713,7 @@ server <- function(input, output, session) {
                                    ##mod.sort=if(input$SignatureGene_groupBy=="study") 2 else 3,
                                    mod.sort=3,
                                    th.dprime=0.15,
-                                   colSet.cancerType=g.colSet$cancerType,
+                                   colSet.cancerType=InputValue$colSet$cancerType,
                                    ncol=input$SignatureGene_PlotNCol)
       }else{
         sendSweetAlert(session = session,
@@ -753,7 +765,7 @@ server <- function(input, output, session) {
                                      ##mod.sort=if(input$SignatureGene_groupBy=="study") 2 else 3,
                                      mod.sort=3,
                                      th.dprime=0.15,
-                                     colSet.cancerType=g.colSet$cancerType,
+                                     colSet.cancerType=InputValue$colSet$cancerType,
                                      ncol=input$SignatureGene_PlotNCol))
         }
       }
@@ -775,26 +787,10 @@ server <- function(input, output, session) {
                        do.clustering.row = input$Heatmap_clustering_row,
                        do.clustering.col = input$Heatmap_clustering_col,
                        clustering.method = "ward.D2",
-                       #colSet = g.colSet,
-                       colSet = g.colSet[c("meta.cluster","cancerType")],
+                       colSet = InputValue$colSet[c("meta.cluster","cancerType")],
                        palette.name = input$Heatmap_colorpanel,
                        z.lo = -input$Heatmap_zMax,z.hi = input$Heatmap_zMax,z.step = 0.5,
                        mytitle = "Heatmap",returnHT = T,ann.bar.height = 0.5)
-
-      # sscVis::ssc.plot.heatmap(g.dat.list$SampleData$sce.perMini[c("PDCD1","CXCL13","CTLA4","LAG3","HAVCR2"),],
-      #                  ##ave.by = if(input$Heatmap_aveby==F) NULL else  c("meta.cluster","cancerType","dataset"),
-      #                  ave.by = c("meta.cluster","cancerType","dataset"),
-      #                  columns = c("meta.cluster","cancerType"),
-      #                  columns.order = "meta.cluster",
-      #                  column.split = NULL,do.scale = F,
-      #                  do.clustering.row = T,
-      #                  do.clustering.col = T,
-      #                  clustering.method = "ward.D2",
-      #                  #colSet = g.colSet,
-      #                  colSet = g.colSet[c("meta.cluster","cancerType")],
-      #                  palette.name = "RdBu",z.lo = -1.5,z.hi = 1.5,z.step = 0.5,
-      #                  mytitle = "Heatmap",returnHT = T,ann.bar.height = 0.5)
-
     }else{
       ggplot(data.frame()) +
         ggtitle("There should be at least two genes") +
@@ -844,8 +840,7 @@ server <- function(input, output, session) {
                        do.clustering.row = input$Heatmap_clustering_row,
                        do.clustering.col = input$Heatmap_clustering_col,
                        clustering.method = "ward.D2",
-                       #colSet = g.colSet,
-                       colSet = g.colSet[c("meta.cluster","cancerType")],
+                       colSet = InputValue$colSet[c("meta.cluster","cancerType")],
                        palette.name = input$Heatmap_colorpanel,
                        z.lo = -input$Heatmap_zMax,z.hi = input$Heatmap_zMax,z.step = 0.5,
                        mytitle = "Heatmap",returnHT = T,ann.bar.height = 0.5)
@@ -985,8 +980,8 @@ server <- function(input, output, session) {
                    ))
     if(input$Metadata_cmp %in% c("cancerType","meta.cluster")){
       p <- p + geom_hline(yintercept=0.10,linetype=2) +
-        scale_color_manual(values=g.colSet[[input$Metadata_cmp]]) +
-        scale_fill_manual(values=g.colSet[[input$Metadata_cmp]])
+        scale_color_manual(values=InputValue$colSet[[input$Metadata_cmp]]) +
+        scale_fill_manual(values=InputValue$colSet[[input$Metadata_cmp]])
     }
     print(p)
   })

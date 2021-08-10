@@ -63,9 +63,10 @@ sidebar <- dashboardSidebar(
     menuItem(
       "SignatureGene",
       tabName = "SignatureGene",
-      icon = icon("braille")
+      icon = icon("align-left")
     ),
     menuItem("Heatmap", tabName = "Heatmap", icon = icon("delicious")),
+    menuItem("DotPlot", tabName = "DotPlot", icon = icon("braille")),
     # menuItem(
     #   "In-silico FACS",
     #   tabName = "FACS",
@@ -448,7 +449,7 @@ body <- dashboardBody(
                                # ),
                                circle = TRUE,
                                status = "danger",
-                               icon = icon("braille"),
+                               icon = icon("chart-bar"),
                                width = "250px",
                                tooltip = tooltipOptions(title = "Click to see inputs!")
                              ),
@@ -539,6 +540,58 @@ body <- dashboardBody(
                              uiOutput("Heatmap_plot.ui"),
                              downloadButton(
                                outputId = 'Heatmap_download',
+                               label = 'Download',
+                               width = "120px",
+                               style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+                             )
+                           ),
+                           # **** DotPlot showing effect size of genes----
+                           tabItem(
+                             tabName = "DotPlot",
+                             dropdownButton(
+                               numericInput(
+                                 inputId = "DotPlot_Width",
+                                 label = "Plot width (px)",
+                                 value = 1000,
+                                 step = 10
+                               ),
+                               numericInput(
+                                 inputId = "DotPlot_Height",
+                                 label = "Plot height (px)",
+                                 value = 300,
+                                 step = 10
+                               ),
+                               sliderInput(
+                                 inputId = "DotPlot_esMin",
+                                 label = "Min of Effect Size",
+                                 value = -0.25,
+                                 min = -0.5,
+                                 max = 0,
+                                 step = 0.05
+                               ),
+                               sliderInput(
+                                 inputId = "DotPlot_esMax",
+                                 label = "Max of Effet Size",
+                                 value = 0.5,
+                                 min = 0,
+                                 max = 1.5,
+                                 step = 0.1
+                               ),
+                               selectInput(
+                                 inputId = "DotPlot_colorpanel",
+                                 label = "Color profile",
+                                 choices = choice.palette,
+                                 selected = "RdYlBu"
+                               ),
+                               circle = TRUE,
+                               status = "danger",
+                               icon = icon("braille"),
+                               width = "250px",
+                               tooltip = tooltipOptions(title = "Click to see inputs!")
+                             ),
+                             uiOutput("DotPlot.ui"),
+                             downloadButton(
+                               outputId = 'DotPlot_download',
                                label = 'Download',
                                width = "120px",
                                style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"

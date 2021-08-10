@@ -773,7 +773,7 @@ server <- function(input, output, session) {
     }
   )
 
-  # Heatmap plot----
+  ####################### Heatmap #########################
   output$Heatmap_plot <- renderPlot({
     if(InputValue$ngene.show>1){
       choice.ave.by <- c("meta.cluster","cancerType","dataset")
@@ -850,6 +850,73 @@ server <- function(input, output, session) {
       ####par(opar)
     }
   )
+  #########################################################
+
+  ####################### DotPlot #########################
+  output$DotPlot <- renderPlot({
+    if(InputValue$ngene.show>0){
+        es.step <- (input$DotPlot_esMax-input$DotPlot_esMin)/3
+        es.breaks <- seq(from=input$DotPlot_esMin,to=input$DotPlot_esMax,by=es.step)
+        plotDotPlotFromGeneTable(gene.tb=InputValue$geneDesc[geneID %in% InputValue$geneinput,],
+                                 group.tb=NULL,
+                                 col.palette=input$DotPlot_colorpanel,
+                                 clamp=c(input$DotPlot_esMin,input$DotPlot_esMax),
+                                 col.breaks=es.breaks,
+                                 par.size=list(breaks=es.breaks,
+                                               range=c(0.2,6),
+                                               labels=es.breaks,
+                                               limits=c(input$DotPlot_esMin,input$DotPlot_esMax)*1))
+    }else{
+      ggplot(data.frame()) +
+        ggtitle("There should be at least one gene") +
+        theme_bw() +
+        theme(plot.title = element_text(
+          size = 26,
+          face = "bold",
+          hjust = 0.5
+        ))
+    }
+  })
+
+  output$DotPlot.ui <- renderUI({
+    plotOutput(
+      "DotPlot",
+      width = input$DotPlot_Width,
+      height = input$DotPlot_Height
+    )
+  })
+
+  output$DotPlot_download <- downloadHandler(
+    filename = function() {
+      sprintf("%s.%s.%s.pdf",
+              "DotPlot",
+              input$SelectData_dataset,
+              stringi::stri_rand_strings(1, 10))
+    },
+    content = function(file) {
+
+      pdf(
+        file,
+        width = input$DotPlot_Width/75,
+        height = input$DotPlot_Height/75
+      )
+      es.step <- (input$DotPlot_esMax-input$DotPlot_esMin)/3
+      es.breaks <- seq(from=input$DotPlot_esMin,to=input$DotPlot_esMax,by=es.step)
+      pp <- plotDotPlotFromGeneTable(gene.tb=InputValue$geneDesc[geneID %in% InputValue$geneinput,],
+                                 group.tb=NULL,
+                                 col.palette=input$DotPlot_colorpanel,
+                                 clamp=c(input$DotPlot_esMin,input$DotPlot_esMax),
+                                 col.breaks=es.breaks,
+                                 par.size=list(breaks=es.breaks,
+                                               range=c(0.2,6),
+                                               labels=es.breaks,
+                                               limits=c(input$DotPlot_esMin,input$DotPlot_esMax)*1))
+      print(pp)
+      dev.off()
+    }
+  )
+
+  #########################################################
 
   # In-silico FACS Plot----
   # output$FACS_plot <- renderPlot({

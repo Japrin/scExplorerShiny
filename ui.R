@@ -215,6 +215,22 @@ body <- dashboardBody(
                                    max = 3,
                                    step = 0.2
                                  ),
+                                 sliderInput(
+                                   inputId = "Embedding_exp_bLo",
+                                   label = "Exp low boundary",
+                                   value = -0.5,
+                                   min = -1,
+                                   max = 0,
+                                   step = 0.1
+                                 ),
+                                 sliderInput(
+                                   inputId = "Embedding_exp_bHi",
+                                   label = "Exp high boundary",
+                                   value = 1.5,
+                                   min = 0.5,
+                                   max = 12,
+                                   step = 0.5
+                                 ),
                                  selectInput(
                                    inputId = "Embedding_colorpanel",
                                    label = "Color profile",
@@ -353,6 +369,30 @@ body <- dashboardBody(
                                  label = "Col number",
                                  value = 1
                                ),
+                               sliderInput(
+                                   inputId = "Distribution_exp_bLo",
+                                   label = "Exp low boundary",
+                                   value = -1.5,
+                                   min = -2.5,
+                                   max = 0,
+                                   step = 0.5
+                               ),
+                               sliderInput(
+                                   inputId = "Distribution_exp_bHi",
+                                   label = "Exp high boundary",
+                                   value = 3,
+                                   min = 0,
+                                   max = 12,
+                                   step = 0.5
+                               ),
+                               sliderInput(
+                                   inputId = "Distribution_exp_bStep",
+                                   label = "Exp boundary step",
+                                   value = 0.5,
+                                   min = 0.1,
+                                   max = 2,
+                                   step = 0.1
+                               ),
                                selectInput(
                                  inputId = "Distribution_colorpanel",
                                  label = "Color profile",
@@ -487,6 +527,12 @@ body <- dashboardBody(
                                #   choices = c("None"),
                                #   selected = "None"
                                # ),
+                               selectInput(
+                                 inputId = "Heatmap_z_scaled",
+                                 label = "Already z-score scaled ?",
+                                 choices = c("Yes","No"),
+                                 selected = "Yes"
+                               ),
                                h5("Clustering",style="font-weight: bold"),
                                checkboxInput(inputId="Heatmap_clustering_row",
                                              label="by row",

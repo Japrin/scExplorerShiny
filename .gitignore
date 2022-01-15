@@ -5,3 +5,5 @@
 trash
 test
 bak
+data/*.rds
+data/dataset_map.csv

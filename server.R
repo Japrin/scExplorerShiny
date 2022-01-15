@@ -7,13 +7,15 @@
 # utilities ----
 my.getPanelList <- function(dat.list,SelectData_dataset){
   sce <- dat.list[[SelectData_dataset]][["sce.perMini"]]
-  out.list <- list("meta.cluster"=levels(sce[["meta.cluster"]]),
+  out.list <- list("meta.cluster"=sort(levels(as.factor(sce[["meta.cluster"]]))),
                    "cancerType"=levels(as.factor(sce[["cancerType"]])),
                    "study"=levels(as.factor(sce[["dataset"]])),
                    "reducedDimNames"=reducedDimNames(sce),
                    "geneSymbol"=sort(unname(rowData(sce)$display.name)),
                    "metaInfo.col"=intersect(colnames(colData(sce)),
-                                            c("dataset","cancerType","meta.cluster"))
+                                            c("dataset","cancerType","meta.cluster",
+                                              "batchV",
+                                              "globalC","subC"))
   )
   if("loc" %in% colnames(colData(sce))){
     out.list[["tissue"]] <- c("P","N","T","L")
@@ -66,7 +68,8 @@ loadDataSet <- function(LoadData_selected) {
                                         "geneDesc"=NULL,
                                         "geneTableLong"=NULL,
                                         "colSet"=NULL,
-                                        "meta.perCell"=NULL)
+                                        "meta.perCell"=NULL,
+                                        "plots"=list())
         if(file.exists(geneDesc.filepath)){
             ret.dat.list[[dataset]][["geneDesc"]] <- reformatData(geneDesc.tb=readRDS(geneDesc.filepath))
         }
@@ -122,7 +125,8 @@ g.dat.list[["SampleData"]] <- list("sce.perMini"=readRDS("./data/panC.sample.per
                                    "geneDesc"=readRDS("./data/panC.geneDesc.sample.R3.4.rds"),
                                    "geneTableLong"=readRDS("./data/panC.geneTable.sample.cancerType.R3.4.rds"),
                                    "colSet"=readRDS("./data/panC.freq.all.colSet.list.rds"),
-                                   "meta.perCell"=readRDS("./data/panC.metaInfo.perCell.SampleData.rds"))
+                                   "meta.perCell"=readRDS("./data/panC.metaInfo.perCell.SampleData.rds"),
+                                   "plots"=list())
 g.dat.list[["SampleData"]][["colSet"]][["meta.cluster"]] <- g.dat.list[["SampleData"]][["colSet"]][["meta.cluster"]][unique(sort(as.character(colData(g.dat.list[["SampleData"]][["sce.perMini"]])[["meta.cluster"]])))]
 reducedDim(g.dat.list[["SampleData"]][["sce.perMini"]],"u.UMAP") <- reducedDim(g.dat.list[["SampleData"]][["sce.perMini"]],"harmony.umap")
 #g.dat.list[["metaInfo"]] <- readRDS("./data/panC.metaInfo.perCell.rds")
@@ -334,6 +338,7 @@ server <- function(input, output, session) {
     geneTableLong = .GlobalEnv$g.dat.list[["SampleData"]][["geneTableLong"]],
     colSet = .GlobalEnv$g.dat.list[["SampleData"]][["colSet"]],
     meta.perCell = .GlobalEnv$g.dat.list[["SampleData"]][["meta.perCell"]],
+    #plots = .GlobalEnv$g.dat.list[["SampleData"]][["plots"]],
     ####
     ##### for debug #####
     debug.list=list()
@@ -392,6 +397,7 @@ server <- function(input, output, session) {
     InputValue$geneTableLong <- .GlobalEnv$g.dat.list[[InputValue$dataset]][["geneTableLong"]]
     InputValue$colSet <- .GlobalEnv$g.dat.list[[InputValue$dataset]][["colSet"]]
     InputValue$colSet[["meta.cluster"]] <- InputValue$colSet[["meta.cluster"]][unique(sort(as.character(colData(InputValue$sce.plot)[["meta.cluster"]])))]
+    #InputValue$plots <- .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]]
     
   })
 
@@ -413,11 +419,13 @@ server <- function(input, output, session) {
     if(InputValue$ngene.show>0){
       if(input$Embedding_GenePar=="Mean"){
           sce.mean <- sscVis::ssc.average.gene(InputValue$sce.plot)
-          print(sscVis::ssc.plot.tsne(sce.mean,
+          p <- sscVis::ssc.plot.tsne(sce.mean,
                                       gene=rowData(sce.mean)$display.name,
                                       ##gene=(InputValue$geneinput),
                                       reduced.name = input$Embedding_used1,
-                                      vector.friendly=F,
+                                      #vector.friendly=T,
+                                      vector.friendly=input$Embedding_gene_download_vf,
+                                      par.geom_point = list(scale=input$Embedding_gene_raster_scale),
                                       #clamp=c(-0.5,1.5),
                                       clamp=c(input$Embedding_exp_bLo,input$Embedding_exp_bHi),
                                       p.ncol=input$PlotPar_ncol,
@@ -425,15 +433,18 @@ server <- function(input, output, session) {
                                       size=input$Embedding_dotsize1,
                                       palette.name=input$Embedding_colorpanel,
                                       splitBy = if(input$Embedding_gene_splitBy=="None") NULL else input$Embedding_gene_splitBy,
-                                      par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5)
-          ))
+                                      par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5))
+          .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Embedding_geneplot"]] <- p
+          print(p)
       }else{
           if(InputValue$ngene.show<=30){
-            print(sscVis::ssc.plot.tsne(InputValue$sce.plot,
+            p <- sscVis::ssc.plot.tsne(InputValue$sce.plot,
                                 gene=rowData(InputValue$sce.plot)$display.name,
                                 ##gene=(InputValue$geneinput),
                                 reduced.name = input$Embedding_used1,
-                                vector.friendly=F,
+                                #vector.friendly=T,
+                                vector.friendly=input$Embedding_gene_download_vf,
+                                par.geom_point = list(scale=input$Embedding_gene_raster_scale),
                                 #clamp=c(-0.5,1.5),
                                 clamp=c(input$Embedding_exp_bLo,input$Embedding_exp_bHi),
                                 p.ncol=input$PlotPar_ncol,
@@ -441,8 +452,9 @@ server <- function(input, output, session) {
                                 size=input$Embedding_dotsize1,
                                 palette.name=input$Embedding_colorpanel,
                                 splitBy = if(input$Embedding_gene_splitBy=="None") NULL else input$Embedding_gene_splitBy,
-                                par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5)
-                                ))
+                                par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5))
+            .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Embedding_geneplot"]] <- p
+            print(p)
             
           }else{
               sendSweetAlert(session = session,
@@ -465,30 +477,26 @@ server <- function(input, output, session) {
   })
 
   output$Embedding_metaplot <- renderPlot({
-    print(sscVis::ssc.plot.tsne(InputValue$sce.plot,
+    p <- sscVis::ssc.plot.tsne(InputValue$sce.plot,
                                 gene=NULL,
                                 #columns=InputValue$Embedding_colorby,
                                 columns=unlist(strsplit(input$Embedding_colorby,",")),
                                 #reduced.name=InputValue$Embedding_used,
                                 reduced.name = input$Embedding_used1,
-                                vector.friendly=F,
+                                #vector.friendly=F,
+                                vector.friendly=input$Embedding_metaInfo_download_vf,
+                                par.geom_point = list(scale=input$Embedding_metaInfo_raster_scale),
                                 p.ncol=input$PlotPar_ncol2,
                                 theme.use=theme_void,
                                 size=input$Embedding_dotsize2,colSet = InputValue$colSet,
                                 label=if(input$Embedding_metaInfo_labelSize==0) NULL else input$Embedding_metaInfo_labelSize,
                                 #plotDensity = F,
                                 splitBy = if(input$Embedding_metaInfo_splitBy=="None") NULL else input$Embedding_metaInfo_splitBy,
-                                par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5)
-    ))
-
-    # p <- ssc.plot.tsne(g.dat.list$SampleData$sce.perMini,columns = "meta.cluster",
-    #               reduced.name = "umap",vector.friendly = F)
-    # ggsave("aa.pdf",width = 8,height = 5)
-    #
-    # p <- ssc.plot.tsne(g.dat.list$SampleData$sce.perMini,columns = "meta.cluster",
-    #                    reduced.name = "umap",vector.friendly = T)
-    # ggsave("bb.pdf",width = 8,height = 5)
-
+                                par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5))
+    .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Embedding_metaplot"]] <- p
+    #assign('g.dat.list',c(ret.dat.list,.GlobalEnv$g.dat.list),envir=.GlobalEnv)
+    #InputValue$plots[["Embedding_metaplot"]] <- p
+    print(p)
 
   })
 
@@ -504,50 +512,20 @@ server <- function(input, output, session) {
 
   output$Embedding_gene_download <- downloadHandler(
     filename = function() {
-      sprintf("%s.Gene.%s.%s.pdf",
+      sprintf("%s.Gene.%s.%s.%s",
               "EmbeddingPlot",
               input$SelectData_dataset,
-              stringi::stri_rand_strings(1, 10))
+              stringi::stri_rand_strings(1, 10),
+              input$Embedding_gene_download_type)
     },
     content = function(file) {
-      pdf(file,
-         width = input$PlotSize_width / 75,
-         height = input$PlotSize_height / 75)
+      if(input$Embedding_gene_download_type=="pdf"){
+        pdf(file, width = input$PlotSize_width / 75, height = input$PlotSize_height / 75)
+      }else{
+        png(file, width = input$PlotSize_width*4, height = input$PlotSize_height*4)
+      }
       if(InputValue$ngene.show>0){
-        if(input$Embedding_GenePar=="Mean"){
-          sce.mean <- sscVis::ssc.average.gene(InputValue$sce.plot)
-          print(sscVis::ssc.plot.tsne(sce.mean,
-                                      gene=rowData(sce.mean)$display.name,
-                                      ##gene=(InputValue$geneinput),
-                                      reduced.name = input$Embedding_used1,
-                                      vector.friendly=F,
-                                      #clamp=c(-0.5,1.5),
-                                      clamp=c(input$Embedding_exp_bLo,input$Embedding_exp_bHi),
-                                      p.ncol=input$PlotPar_ncol,
-                                      theme.use=theme_void,
-                                      size=input$Embedding_dotsize1,
-                                      palette.name=input$Embedding_colorpanel,
-                                      splitBy = if(input$Embedding_gene_splitBy=="None") NULL else input$Embedding_gene_splitBy,
-                                      par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5)
-          ))
-        }else{
-          if(InputValue$ngene.show<=30){
-            print(sscVis::ssc.plot.tsne(InputValue$sce.plot,
-                                        gene=rowData(InputValue$sce.plot)$display.name,
-                                        ##gene=(InputValue$geneinput),
-                                        reduced.name = input$Embedding_used1,
-                                        vector.friendly=F,
-                                        #clamp=c(-0.5,1.5),
-                                        clamp=c(input$Embedding_exp_bLo,input$Embedding_exp_bHi),
-                                        p.ncol=input$PlotPar_ncol,
-                                        theme.use=theme_void,
-                                        size=input$Embedding_dotsize1,
-                                        palette.name=input$Embedding_colorpanel,
-                                        splitBy = if(input$Embedding_gene_splitBy=="None") NULL else input$Embedding_gene_splitBy,
-                                        par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5)
-            ))
-          }
-        }
+        print(.GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Embedding_geneplot"]])
       }
       dev.off()
     }
@@ -555,30 +533,21 @@ server <- function(input, output, session) {
 
   output$Embedding_metaInfo_download <- downloadHandler(
     filename = function() {
-      sprintf("%s.metaInfo.%s.%s.pdf",
+      sprintf("%s.metaInfo.%s.%s.%s",
               "EmbeddingPlot",
               input$SelectData_dataset,
-              stringi::stri_rand_strings(1, 10))
+              stringi::stri_rand_strings(1, 10),
+              input$Embedding_metaInfo_download_type)
     },
     content = function(file) {
-      pdf(file,
-          width = input$PlotSize_width2 / 75,
-          height = input$PlotSize_height2 / 75)
-      print(sscVis::ssc.plot.tsne(InputValue$sce.plot,
-                                  gene=NULL,
-                                  #columns=InputValue$Embedding_colorby,
-                                  columns=unlist(strsplit(input$Embedding_colorby,",")),
-                                  #reduced.name=InputValue$Embedding_used,
-                                  reduced.name = input$Embedding_used1,
-                                  vector.friendly=T,
-                                  p.ncol=input$PlotPar_ncol2,
-                                  theme.use=theme_void,
-                                  size=input$Embedding_dotsize2,colSet = InputValue$colSet,
-                                  label=if(input$Embedding_metaInfo_labelSize==0) NULL else input$Embedding_metaInfo_labelSize,
-                                  #plotDensity = F,
-                                  splitBy = if(input$Embedding_metaInfo_splitBy=="None") NULL else input$Embedding_metaInfo_splitBy,
-                                  par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5)))
-      dev.off()
+          if(input$Embedding_metaInfo_download_type=="pdf"){
+              pdf(file, width = input$PlotSize_width2 / 75, height = input$PlotSize_height2 / 75)
+          }else{
+              png(file, width = input$PlotSize_width2*4, height = input$PlotSize_height2*4)
+          }
+          print(.GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Embedding_metaplot"]])
+          #print(p)
+          dev.off()
     }
   )
 
@@ -587,11 +556,12 @@ server <- function(input, output, session) {
     if(InputValue$ngene.show>0){
       if(input$Distribution_GenePar=="Mean"){
         sce.mean <- ssc.average.gene(InputValue$sce.plot)
-        print(sscVis::ssc.plot.violin(sce.mean,
+        p <- sscVis::ssc.plot.violin(sce.mean,
                                       #gene=(InputValue$geneinput),
                                       gene=rowData(sce.mean)$display.name,
                                       #par.legend = list(breaks=c(-1.5,-1,0,1,2,3)),
-                                      par.legend = list(breaks=seq(input$Distribution_exp_bLo, input$Distribution_exp_bHi, input$Distribution_exp_bStep)),
+                                      par.legend = list(breaks=seq(input$Distribution_exp_bLo,
+                                                                   input$Distribution_exp_bHi, input$Distribution_exp_bStep)),
                                       group.var = input$Distribution_groupby,
                                       splitBy = if(input$Distribution_splitBy=="None") NULL else input$Distribution_splitBy,
                                       #clamp=c(-1.5,3),
@@ -599,14 +569,17 @@ server <- function(input, output, session) {
                                       group.in = NULL,
                                       add=c("boxplot"),
                                       palette.name = input$Distribution_colorpanel,
-                                      p.ncol = input$Distribution_PlotNCol))
+                                      p.ncol = input$Distribution_PlotNCol)
+        .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Distribution_plot"]] <- p
+        print(p)
       }else{
         if(InputValue$ngene.show<=30){
-          print(sscVis::ssc.plot.violin(InputValue$sce.plot,
+          p <- sscVis::ssc.plot.violin(InputValue$sce.plot,
                                         #gene=(InputValue$geneinput),
                                         gene=rowData(InputValue$sce.plot)$display.name,
                                         #par.legend = list(breaks=c(-1.5,-1,0,1,2,3)),
-                                        par.legend = list(breaks=seq(input$Distribution_exp_bLo, input$Distribution_exp_bHi, input$Distribution_exp_bStep)),
+                                        par.legend = list(breaks=seq(input$Distribution_exp_bLo,
+                                                                     input$Distribution_exp_bHi, input$Distribution_exp_bStep)),
                                         group.var = input$Distribution_groupby,
                                         splitBy = if(input$Distribution_splitBy=="None") NULL else input$Distribution_splitBy,
                                         #clamp=c(-1.5,3),
@@ -614,7 +587,9 @@ server <- function(input, output, session) {
                                         group.in = NULL,
                                         add=c("boxplot"),
                                         palette.name = input$Distribution_colorpanel,
-                                        p.ncol = input$Distribution_PlotNCol))
+                                        p.ncol = input$Distribution_PlotNCol)
+          .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Distribution_plot"]] <- p
+          print(p)
         }else{
           sendSweetAlert(session = session,
                          title = sprintf("Too many genes (%d>30)! Please select \"Mean\" in the \"Multi gene\" or input less genes",
@@ -649,38 +624,7 @@ server <- function(input, output, session) {
         height = input$Distribution_PlotHeight / 75
       )
       if(InputValue$ngene.show>0){
-        if(input$Distribution_GenePar=="Mean"){
-          sce.mean <- ssc.average.gene(InputValue$sce.plot)
-          print(sscVis::ssc.plot.violin(sce.mean,
-                                        #gene=(InputValue$geneinput),
-                                        gene=rowData(sce.mean)$display.name,
-                                        #par.legend = list(breaks=c(-1.5,-1,0,1,2,3)),
-                                        par.legend = list(breaks=seq(input$Distribution_exp_bLo, input$Distribution_exp_bHi, input$Distribution_exp_bStep)),
-                                        group.var = input$Distribution_groupby,
-                                        splitBy = if(input$Distribution_splitBy=="None") NULL else input$Distribution_splitBy,
-                                        #clamp=c(-1.5,3),
-                                        clamp=c(input$Distribution_exp_bLo,input$Distribution_exp_bHi),
-                                        group.in = NULL,
-                                        add=c("boxplot"),
-                                        palette.name = input$Distribution_colorpanel,
-                                        p.ncol = input$Distribution_PlotNCol))
-        }else{
-          if(InputValue$ngene.show<=30){
-            print(sscVis::ssc.plot.violin(InputValue$sce.plot,
-                                          #gene=(InputValue$geneinput),
-                                          gene=rowData(InputValue$sce.plot)$display.name,
-                                          #par.legend = list(breaks=c(-1.5,-1,0,1,2,3)),
-                                          par.legend = list(breaks=seq(input$Distribution_exp_bLo, input$Distribution_exp_bHi, input$Distribution_exp_bStep)),
-                                          group.var = input$Distribution_groupby,
-                                          splitBy = if(input$Distribution_splitBy=="None") NULL else input$Distribution_splitBy,
-                                          #clamp=c(-1.5,3),
-                                          clamp=c(input$Distribution_exp_bLo,input$Distribution_exp_bHi),
-                                          group.in = NULL,
-                                          add=c("boxplot"),
-                                          palette.name = input$Distribution_colorpanel,
-                                          p.ncol = input$Distribution_PlotNCol))
-          }
-        }
+        print(.GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Distribution_plot"]])
       }
       dev.off()
     }
@@ -730,24 +674,9 @@ server <- function(input, output, session) {
   output$Significance_plot <- renderPlot({
     if(InputValue$ngene.show>0){
       if(InputValue$ngene.show<=30){
-
-        # sce.perMeta.a <- InputValue$sce.perMeta
-        # gene.long.tb <- sscVis::ssc.toLongTable(sce.perMeta.a[,sce.perMeta.a$meta.cluster==input$SignatureGene_meta.cluster],
-        #                                                    ### fetch all genes for correct FDR
-        #                                                    #gene.symbol = InputValue$geneinput,
-        #                                                    gene.id = NULL,
-        #                                                    col.idx = c("meta.cluster","cancerType",
-        #                                                                "dataset","dataset.old"))
-        # gene.long.collapsed.tb <- sscVis:::collapseEffectSizeLong(gene.long.tb[meta.cluster==input$SignatureGene_meta.cluster,],                                                                  
-        #                                                                      mode.collapse="comb",
-        #                                                                      group.2nd="cancerType",
-        #                                                                      th.adj.P=0.01,th.dprime=0.15)
-        # gene.long.collapsed.tb$meta.cluster <- input$SignatureGene_meta.cluster
         gene.long.collapsed.tb <- InputValue$geneTableLong[meta.cluster==input$SignatureGene_meta.cluster &
                                                              geneID %in% InputValue$geneinput,]
-        
-        
-        makeFig.ExampleGeneBarplot(gene.to.plot=InputValue$geneinput,
+        p <- makeFig.ExampleGeneBarplot(gene.to.plot=InputValue$geneinput,
                                    mcls.plot=input$SignatureGene_meta.cluster,
                                    gene.long.tb=gene.long.collapsed.tb,
                                    gene.long.collapsed.tb=gene.long.collapsed.tb,
@@ -757,6 +686,8 @@ server <- function(input, output, session) {
                                    th.dprime=0.15,
                                    colSet.cancerType=InputValue$colSet$cancerType,
                                    ncol=input$SignatureGene_PlotNCol)
+        .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Significance_plot"]] <- p
+        print(p)
       }else{
         sendSweetAlert(session = session,
                        title = sprintf("Too many genes (%d>30)! Please select \"Mean\" in the \"Multi gene\" or input less genes",
@@ -790,25 +721,7 @@ server <- function(input, output, session) {
       )
       if(InputValue$ngene.show>0){
         if(InputValue$ngene.show<=30){
-
-          # gene.long.collapsed.tb <- sscVis:::collapseEffectSizeLong(InputValue$gene.long.tb[meta.cluster==input$SignatureGene_meta.cluster,],
-          #                                                           mode.collapse="comb",
-          #                                                           group.2nd="cancerType",
-          #                                                           th.adj.P=0.01,th.dprime=0.15)
-          # gene.long.collapsed.tb$meta.cluster <- input$SignatureGene_meta.cluster
-          gene.long.collapsed.tb <- InputValue$geneTableLong[meta.cluster==input$SignatureGene_meta.cluster &
-                                                               geneID %in% InputValue$geneinput,]
-          
-          print(makeFig.ExampleGeneBarplot(gene.to.plot=InputValue$geneinput,
-                                     mcls.plot=input$SignatureGene_meta.cluster,
-                                     gene.long.tb=gene.long.collapsed.tb,
-                                     gene.long.collapsed.tb=gene.long.collapsed.tb,
-                                     gene.desc.top=InputValue$geneDesc,
-                                     ##mod.sort=if(input$SignatureGene_groupBy=="study") 2 else 3,
-                                     mod.sort=3,
-                                     th.dprime=0.15,
-                                     colSet.cancerType=InputValue$colSet$cancerType,
-                                     ncol=input$SignatureGene_PlotNCol))
+          print(.GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Significance_plot"]])
         }
       }
       dev.off()
@@ -832,7 +745,7 @@ server <- function(input, output, session) {
           sce.plot.z <- InputValue$sce.plot
       }
 
-      ssc.plot.heatmap(sce.plot.z,
+      ht <- ssc.plot.heatmap(sce.plot.z,
                        ##ave.by = if(input$Heatmap_aveby==F) NULL else  c("meta.cluster","cancerType","dataset"),
                        ave.by = used.ave.by,
                        columns = used.ave.by,
@@ -845,6 +758,8 @@ server <- function(input, output, session) {
                        palette.name = input$Heatmap_colorpanel,
                        z.lo = -input$Heatmap_zMax,z.hi = input$Heatmap_zMax,z.step = 0.5,
                        mytitle = "Heatmap",returnHT = T,ann.bar.height = 0.5)
+      .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Heatmap_plot"]] <- ht
+      ht
     }else{
       ggplot(data.frame()) +
         ggtitle("There should be at least two genes") +
@@ -873,7 +788,6 @@ server <- function(input, output, session) {
               stringi::stri_rand_strings(1, 10))
     },
     content = function(file) {
-
       pdf(
         file,
         width = input$Heatmap_PlotWidth/75,
@@ -884,32 +798,7 @@ server <- function(input, output, session) {
       ###title(main = mytitle,cex.main=2)
       vps <- gridBase::baseViewports()
       grid::pushViewport(vps$inner, vps$figure, vps$plot)
-      choice.ave.by <- c("meta.cluster","cancerType","dataset")
-      used.ave.by <- choice.ave.by[seq_len(match(input$Heatmap_aveBy,choice.ave.by))]
-
-      if(input$Heatmap_z_scaled=="No"){
-          sce.plot.z <- ssc.scale(InputValue$sce.plot,
-                                  gene.symbol=rowData(InputValue$sce.plot)$display.name,
-                                  assay.name="exprs",
-                                  adjB=if("batchV" %in% colnames(colData(InputValue$sce.plot))) "batchV" else NULL,
-                                  do.scale=T)
-          assay(sce.plot.z,"exprs") <- assay(sce.plot.z,"exprs.scale")
-      }else{
-          sce.plot.z <- InputValue$sce.plot
-      }
-
-      ht <- ssc.plot.heatmap(sce.plot.z,
-                       ave.by = used.ave.by,
-                       columns = used.ave.by,
-                       columns.order = "meta.cluster",
-                       column.split = NULL,do.scale = F,
-                       do.clustering.row = input$Heatmap_clustering_row,
-                       do.clustering.col = input$Heatmap_clustering_col,
-                       clustering.method = "ward.D2",
-                       colSet = InputValue$colSet[c("meta.cluster","cancerType")],
-                       palette.name = input$Heatmap_colorpanel,
-                       z.lo = -input$Heatmap_zMax,z.hi = input$Heatmap_zMax,z.step = 0.5,
-                       mytitle = "Heatmap",returnHT = T,ann.bar.height = 0.5)
+      ht <- .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Heatmap_plot"]]
       ComplexHeatmap::draw(ht, newpage= FALSE,merge_legends = TRUE,split=NULL)
       dev.off()
       ##### cannot set par here, raise error
@@ -923,7 +812,7 @@ server <- function(input, output, session) {
     if(InputValue$ngene.show>0){
         es.step <- (input$DotPlot_esMax-input$DotPlot_esMin)/3
         es.breaks <- seq(from=input$DotPlot_esMin,to=input$DotPlot_esMax,by=es.step)
-        plotDotPlotFromGeneTable(gene.tb=InputValue$geneDesc[geneID %in% InputValue$geneinput,],
+        pp <- plotDotPlotFromGeneTable(gene.tb=InputValue$geneDesc[geneID %in% InputValue$geneinput,],
                                  group.tb=NULL,
                                  col.palette=input$DotPlot_colorpanel,
                                  clamp=c(input$DotPlot_esMin,input$DotPlot_esMax),
@@ -932,6 +821,8 @@ server <- function(input, output, session) {
                                                range=c(0.2,6),
                                                labels=es.breaks,
                                                limits=c(input$DotPlot_esMin,input$DotPlot_esMax)*1))
+        .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["DotPlot"]] <- pp
+        print(pp)
     }else{
       ggplot(data.frame()) +
         ggtitle("There should be at least one gene") +
@@ -960,24 +851,12 @@ server <- function(input, output, session) {
               stringi::stri_rand_strings(1, 10))
     },
     content = function(file) {
-
       pdf(
         file,
         width = input$DotPlot_Width/75,
         height = input$DotPlot_Height/75
       )
-      es.step <- (input$DotPlot_esMax-input$DotPlot_esMin)/3
-      es.breaks <- seq(from=input$DotPlot_esMin,to=input$DotPlot_esMax,by=es.step)
-      pp <- plotDotPlotFromGeneTable(gene.tb=InputValue$geneDesc[geneID %in% InputValue$geneinput,],
-                                 group.tb=NULL,
-                                 col.palette=input$DotPlot_colorpanel,
-                                 clamp=c(input$DotPlot_esMin,input$DotPlot_esMax),
-                                 col.breaks=es.breaks,
-                                 par.size=list(breaks=es.breaks,
-                                               range=c(0.2,6),
-                                               labels=es.breaks,
-                                               limits=c(input$DotPlot_esMin,input$DotPlot_esMax)*1))
-      print(pp)
+      print(.GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["DotPlot"]])
       dev.off()
     }
   )
@@ -1116,6 +995,7 @@ server <- function(input, output, session) {
         scale_color_manual(values=InputValue$colSet[[input$Metadata_cmp]]) +
         scale_fill_manual(values=InputValue$colSet[[input$Metadata_cmp]])
     }
+    .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Metadata_plot"]] <- p
     print(p)
   })
 
@@ -1132,23 +1012,9 @@ server <- function(input, output, session) {
       )
     },
     content = function(file) {
-      pdf(file,
-          width = InputValue$plot_width / 80,
-          height = InputValue$plot_height / 80)
-      plot(
-        DoMetadataPlot(
-          plot.data = InputValue$plot_data,
-          plot.type = input$Metadata_plottype,
-          group.by1 = input$Metadata_groupby1,
-          color.by = input$Metadata_colorby,
-          group.by2 = input$Metadata_groupby2,
-          quantify = input$Metadata_quantify,
-          coord.flip = input$Metadata_flip,
-          show.cutoff = input$Metadata_cutoff,
-          nrow = input$PlotPar_nrow,
-          font.size = input$PlotPar_fontsize
-        )
-      )
+      #pdf(file, width = InputValue$plot_width / 75, height = InputValue$plot_height / 75)
+      pdf(file)
+      print(.GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Metadata_plot"]])
       dev.off()
     }
   )

@@ -208,14 +208,6 @@ body <- dashboardBody(
                                    value = 1
                                  ),
                                  sliderInput(
-                                   inputId = "Embedding_dotsize1",
-                                   label = "Dot size",
-                                   value = 2,
-                                   min = 0,
-                                   max = 3,
-                                   step = 0.2
-                                 ),
-                                 sliderInput(
                                    inputId = "Embedding_exp_bLo",
                                    label = "Exp low boundary",
                                    value = -0.5,
@@ -231,6 +223,32 @@ body <- dashboardBody(
                                    max = 12,
                                    step = 0.5
                                  ),
+                                 sliderInput(
+                                   inputId = "Embedding_dotsize1",
+                                   label = "Dot size",
+                                   value = 2,
+                                   min = 0,
+                                   max = 3,
+                                   step = 0.2
+                                 ),
+                                 sliderInput(
+                                   inputId = "Embedding_gene_raster_scale",
+                                   label = "Raster scale",
+                                   value = 1,
+                                   min = 0,
+                                   max = 1,
+                                   step = 0.05
+                                 ),
+                                 selectInput(
+                                   inputId = "Embedding_gene_download_type",
+                                   label = "Figure Type",
+                                   choices = c("pdf","png"),
+                                   selected = "pdf"
+                                 ),
+                                 #h5("Vector friendly?",style="font-weight: bold"),
+                                 checkboxInput(inputId="Embedding_gene_download_vf",
+                                             label="Vector friendly",
+                                             value = F, width = NULL),
                                  selectInput(
                                    inputId = "Embedding_colorpanel",
                                    label = "Color profile",
@@ -286,6 +304,14 @@ body <- dashboardBody(
                                    value = 1
                                  ),
                                  sliderInput(
+                                   inputId = "Embedding_metaInfo_labelSize",
+                                   label = "Label size",
+                                   value = 3.5,
+                                   min = 0,
+                                   max = 10,
+                                   step = 0.5
+                                 ),
+                                 sliderInput(
                                    inputId = "Embedding_dotsize2",
                                    label = "Dot size",
                                    value = 1.4,
@@ -294,13 +320,22 @@ body <- dashboardBody(
                                    step = 0.2
                                  ),
                                  sliderInput(
-                                   inputId = "Embedding_metaInfo_labelSize",
-                                   label = "Label size",
-                                   value = 3.5,
+                                   inputId = "Embedding_metaInfo_raster_scale",
+                                   label = "Raster scale",
+                                   value = 1,
                                    min = 0,
-                                   max = 10,
-                                   step = 0.5
+                                   max = 1,
+                                   step = 0.05
                                  ),
+                                 selectInput(
+                                   inputId = "Embedding_metaInfo_download_type",
+                                   label = "Figure Type",
+                                   choices = c("pdf","png"),
+                                   selected = "pdf"
+                                 ),
+                                 checkboxInput(inputId="Embedding_metaInfo_download_vf",
+                                             label="Vector friendly",
+                                             value = F, width = NULL),
                                  circle = TRUE,
                                  status = "danger",
                                  icon = icon("spinner"),

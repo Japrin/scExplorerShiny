@@ -207,6 +207,12 @@ body <- dashboardBody(
                                    label = "Col number",
                                    value = 1
                                  ),
+                                 selectInput(
+                                   inputId = "Embedding_do_scale",
+                                   label = "Scale the data?",
+                                   choices = c("Yes","No"),
+                                   selected = "No"
+                                 ),
                                  sliderInput(
                                    inputId = "Embedding_exp_bLo",
                                    label = "Exp low boundary",
@@ -403,6 +409,12 @@ body <- dashboardBody(
                                  inputId = "Distribution_PlotNCol",
                                  label = "Col number",
                                  value = 1
+                               ),
+                               selectInput(
+                                   inputId = "Distribution_do_scale",
+                                   label = "Scale the data?",
+                                   choices = c("Yes","No"),
+                                   selected = "No"
                                ),
                                sliderInput(
                                    inputId = "Distribution_exp_bLo",

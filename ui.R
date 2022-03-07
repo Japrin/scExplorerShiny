@@ -575,10 +575,10 @@ body <- dashboardBody(
                                #   selected = "None"
                                # ),
                                selectInput(
-                                 inputId = "Heatmap_z_scaled",
-                                 label = "Already z-score scaled ?",
+                                 inputId = "Heatmap_do_scale",
+                                 label = "Scale the data?",
                                  choices = c("Yes","No"),
-                                 selected = "Yes"
+                                 selected = "No"
                                ),
                                h5("Clustering",style="font-weight: bold"),
                                checkboxInput(inputId="Heatmap_clustering_row",

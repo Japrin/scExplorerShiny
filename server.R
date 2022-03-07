@@ -738,7 +738,7 @@ server <- function(input, output, session) {
       choice.ave.by <- c("meta.cluster","cancerType","dataset")
       used.ave.by <- choice.ave.by[seq_len(match(input$Heatmap_aveBy,choice.ave.by))]
 
-      if(input$Heatmap_z_scaled=="No"){
+      if(input$Heatmap_do_scale=="Yes"){
           sce.plot.z <- ssc.scale(InputValue$sce.plot,
                                   gene.symbol=rowData(InputValue$sce.plot)$display.name,
                                   assay.name="exprs",

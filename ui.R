@@ -248,7 +248,7 @@ body <- dashboardBody(
                                    value = 2,
                                    min = 0,
                                    max = 3,
-                                   step = 0.2
+                                   step = 0.1
                                  ),
                                  sliderInput(
                                    inputId = "Embedding_gene_raster_scale",
@@ -336,7 +336,7 @@ body <- dashboardBody(
                                    value = 1.4,
                                    min = 0,
                                    max = 3,
-                                   step = 0.2
+                                   step = 0.1
                                  ),
                                  sliderInput(
                                    inputId = "Embedding_metaInfo_raster_scale",

@@ -213,22 +213,35 @@ body <- dashboardBody(
                                    choices = c("Yes","No"),
                                    selected = "No"
                                  ),
+                                 selectInput(
+                                   inputId = "Embedding_free_scale",
+                                   label = "Free the scale?",
+                                   choices = c("Yes","No"),
+                                   selected = "No"
+                                 ),
+                                 ##
                                  sliderInput(
                                    inputId = "Embedding_exp_bLo",
                                    label = "Exp low boundary",
                                    value = -0.5,
-                                   min = -1,
+                                   min = -4,
                                    max = 0,
-                                   step = 0.1
-                                 ),
+                                   step = 0.5),
                                  sliderInput(
                                    inputId = "Embedding_exp_bHi",
                                    label = "Exp high boundary",
                                    value = 1.5,
-                                   min = 0.5,
+                                   min = 0,
                                    max = 12,
-                                   step = 0.5
-                                 ),
+                                   step = 0.5),
+                                 sliderInput(
+                                   inputId = "Embedding_exp_bStep",
+                                   label = "Exp boundary step",
+                                   value = 0.5,
+                                   min = 0.1,
+                                   max = 2,
+                                   step = 0.1),
+                                 ##
                                  sliderInput(
                                    inputId = "Embedding_dotsize1",
                                    label = "Dot size",
@@ -416,11 +429,12 @@ body <- dashboardBody(
                                    choices = c("Yes","No"),
                                    selected = "No"
                                ),
+                               ##
                                sliderInput(
                                    inputId = "Distribution_exp_bLo",
                                    label = "Exp low boundary",
                                    value = -1.5,
-                                   min = -2.5,
+                                   min = -4,
                                    max = 0,
                                    step = 0.5
                                ),
@@ -440,6 +454,7 @@ body <- dashboardBody(
                                    max = 2,
                                    step = 0.1
                                ),
+                               ##
                                selectInput(
                                  inputId = "Distribution_colorpanel",
                                  label = "Color profile",
@@ -610,14 +625,37 @@ body <- dashboardBody(
                                #   label = "Col number",
                                #   value = 1
                                # ),
+                               ###sliderInput(
+                               ###  inputId = "Heatmap_zMax",
+                               ###  label = "Exp limits",
+                               ###  value = 1.5,
+                               ###  min = 0.5,
+                               ###  max = 2,
+                               ###  step = 0.1
+                               ###),
+                               ##
                                sliderInput(
-                                 inputId = "Heatmap_zMax",
-                                 label = "Exp limits",
-                                 value = 1.5,
-                                 min = 0.5,
-                                 max = 2,
-                                 step = 0.1
-                               ),
+                                   inputId = "Heatmap_exp_bLo",
+                                   label = "Exp low boundary",
+                                   value = -1.5,
+                                   min = -4,
+                                   max = 0,
+                                   step = 0.5),
+                               sliderInput(
+                                   inputId = "Heatmap_exp_bHi",
+                                   label = "Exp high boundary",
+                                   value = 1.5,
+                                   min = 0,
+                                   max = 12,
+                                   step = 0.5),
+                               sliderInput(
+                                   inputId = "Heatmap_exp_bStep",
+                                   label = "Exp boundary step",
+                                   value = 0.5,
+                                   min = 0.1,
+                                   max = 2,
+                                   step = 0.1),
+                               ##
                                selectInput(
                                  inputId = "Heatmap_colorpanel",
                                  label = "Color profile",

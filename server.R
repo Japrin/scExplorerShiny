@@ -15,6 +15,7 @@ my.getPanelList <- function(dat.list,SelectData_dataset){
                    "metaInfo.col"=intersect(colnames(colData(sce)),
                                             c("dataset","cancerType","meta.cluster",
                                               "batchV",
+                                              "cellType","cellSubType",
                                               "globalC","subC"))
   )
   if("loc" %in% colnames(colData(sce))){
@@ -426,15 +427,19 @@ server <- function(input, output, session) {
                                       #vector.friendly=T,
                                       vector.friendly=input$Embedding_gene_download_vf,
                                       par.geom_point = list(scale=input$Embedding_gene_raster_scale),
-                                      #clamp=c(-0.5,1.5),
+                                      ##clamp=if(input$Embedding_free_scale=="Yes") c(-4,8) else c(input$Embedding_exp_bLo,input$Embedding_exp_bHi),
                                       clamp=c(input$Embedding_exp_bLo,input$Embedding_exp_bHi),
                                       do.scale=ifelse(input$Embedding_do_scale=="Yes",T,F),
                                       p.ncol=input$PlotPar_ncol,
                                       theme.use=theme_void,
                                       size=input$Embedding_dotsize1,
                                       palette.name=input$Embedding_colorpanel,
+                                      par.legend=list(name=ifelse(input$Embedding_do_scale=="Yes","z-score","Exp"),
+                                                      breaks=seq(input$Embedding_exp_bLo,
+                                                                 input$Embedding_exp_bHi, input$Embedding_exp_bStep)),
                                       splitBy = if(input$Embedding_gene_splitBy=="None") NULL else input$Embedding_gene_splitBy,
-                                      par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5))
+                                      ##par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5))
+                                      par.geneOnTSNE=list(scales=ifelse(input$Embedding_free_scale=="Yes","free","fixed"),pt.order="random",pt.alpha = 0.5))
           .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Embedding_geneplot"]] <- p
           print(p)
       }else{
@@ -446,15 +451,18 @@ server <- function(input, output, session) {
                                 #vector.friendly=T,
                                 vector.friendly=input$Embedding_gene_download_vf,
                                 par.geom_point = list(scale=input$Embedding_gene_raster_scale),
-                                #clamp=c(-0.5,1.5),
+                                ##clamp=if(input$Embedding_free_scale=="Yes") c(-4,8) else c(input$Embedding_exp_bLo,input$Embedding_exp_bHi),
                                 clamp=c(input$Embedding_exp_bLo,input$Embedding_exp_bHi),
                                 do.scale=ifelse(input$Embedding_do_scale=="Yes",T,F),
                                 p.ncol=input$PlotPar_ncol,
                                 theme.use=theme_void,
                                 size=input$Embedding_dotsize1,
                                 palette.name=input$Embedding_colorpanel,
+                                par.legend=list(name=ifelse(input$Embedding_do_scale=="Yes","z-score","Exp"),
+                                                breaks=seq(input$Embedding_exp_bLo,
+                                                           input$Embedding_exp_bHi, input$Embedding_exp_bStep)),
                                 splitBy = if(input$Embedding_gene_splitBy=="None") NULL else input$Embedding_gene_splitBy,
-                                par.geneOnTSNE=list(scales="fixed",pt.order="random",pt.alpha = 0.5))
+                                par.geneOnTSNE=list(scales=ifelse(input$Embedding_free_scale=="Yes","free","fixed"),pt.order="random",pt.alpha = 0.5))
             .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Embedding_geneplot"]] <- p
             print(p)
             
@@ -562,7 +570,8 @@ server <- function(input, output, session) {
                                       #gene=(InputValue$geneinput),
                                       gene=rowData(sce.mean)$display.name,
                                       #par.legend = list(breaks=c(-1.5,-1,0,1,2,3)),
-                                      par.legend = list(breaks=seq(input$Distribution_exp_bLo,
+                                      par.legend = list(name=ifelse(input$Distribution_do_scale=="Yes","z-score","Exp"),
+                                                        breaks=seq(input$Distribution_exp_bLo,
                                                                    input$Distribution_exp_bHi, input$Distribution_exp_bStep)),
                                       group.var = input$Distribution_groupby,
                                       splitBy = if(input$Distribution_splitBy=="None") NULL else input$Distribution_splitBy,
@@ -581,7 +590,8 @@ server <- function(input, output, session) {
                                         #gene=(InputValue$geneinput),
                                         gene=rowData(InputValue$sce.plot)$display.name,
                                         #par.legend = list(breaks=c(-1.5,-1,0,1,2,3)),
-                                        par.legend = list(breaks=seq(input$Distribution_exp_bLo,
+                                        par.legend = list(name=ifelse(input$Distribution_do_scale=="Yes","z-score","Exp"),
+                                                          breaks=seq(input$Distribution_exp_bLo,
                                                                      input$Distribution_exp_bHi, input$Distribution_exp_bStep)),
                                         group.var = input$Distribution_groupby,
                                         splitBy = if(input$Distribution_splitBy=="None") NULL else input$Distribution_splitBy,
@@ -760,7 +770,8 @@ server <- function(input, output, session) {
                        clustering.method = "ward.D2",
                        colSet = InputValue$colSet[c("meta.cluster","cancerType")],
                        palette.name = input$Heatmap_colorpanel,
-                       z.lo = -input$Heatmap_zMax,z.hi = input$Heatmap_zMax,z.step = 0.5,
+                       exp.title=ifelse(input$Heatmap_do_scale=="Yes","z-score","Exp"),
+                       z.lo = input$Heatmap_exp_bLo,z.hi = input$Heatmap_exp_bHi,z.step = input$Heatmap_exp_bStep,
                        mytitle = "Heatmap",returnHT = T,ann.bar.height = 0.5)
       .GlobalEnv$g.dat.list[[InputValue$dataset]][["plots"]][["Heatmap_plot"]] <- ht
       ht

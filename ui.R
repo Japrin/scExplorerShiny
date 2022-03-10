@@ -264,10 +264,16 @@ body <- dashboardBody(
                                    choices = c("pdf","png"),
                                    selected = "pdf"
                                  ),
-                                 #h5("Vector friendly?",style="font-weight: bold"),
-                                 checkboxInput(inputId="Embedding_gene_download_vf",
-                                             label="Vector friendly",
-                                             value = F, width = NULL),
+                                 selectInput(
+                                   inputId = "Embedding_gene_scatter_function",
+                                   label = "scatter function",
+                                   choices = c("geom_point","geom_point_rast","geom_scattermore"),
+                                   selected = "geom_point"
+                                 ),
+                                 ####h5("Vector friendly?",style="font-weight: bold"),
+                                 #checkboxInput(inputId="Embedding_gene_download_vf",
+                                 #            label="Vector friendly",
+                                 #            value = F, width = NULL),
                                  selectInput(
                                    inputId = "Embedding_colorpanel",
                                    label = "Color profile",
@@ -352,9 +358,15 @@ body <- dashboardBody(
                                    choices = c("pdf","png"),
                                    selected = "pdf"
                                  ),
-                                 checkboxInput(inputId="Embedding_metaInfo_download_vf",
-                                             label="Vector friendly",
-                                             value = F, width = NULL),
+                                 selectInput(
+                                   inputId = "Embedding_metaInfo_scatter_function",
+                                   label = "scatter function",
+                                   choices = c("geom_point","geom_point_rast","geom_scattermore"),
+                                   selected = "geom_point"
+                                 ),
+                                 #checkboxInput(inputId="Embedding_metaInfo_download_vf",
+                                 #            label="Vector friendly",
+                                 #            value = F, width = NULL),
                                  circle = TRUE,
                                  status = "danger",
                                  icon = icon("spinner"),

@@ -31,68 +31,77 @@ makeFig.ExampleGeneBarplot <- function(gene.to.plot,
                                        gene.desc.top,
                                        gene.long.collapsed.tb=NULL,
                                        mod.sort=2,th.dprime=0.15,
+                                       cancerTypeOfInterest=NULL,rel_h_legend=0.5,
+                                       sortCancerType="ES",
                                        colSet.cancerType=NULL,ncol=1)
 {
+    require("plyr")
+    require("data.table")
+
     prepare.data.for.plot <- function(dat.long,gene.desc.top,mcls,a.gene,mod.sort=3)
     {
-	if(mod.sort==1 || mod.sort==2){
-	    mapping.dataset.tb <- unique(data.table(dataset=gene.long.tb$dataset,dataset.old=gene.long.tb$dataset.old))
-	    mapping.dataset.tb[dataset.old=="CHOL.YaoHe10X",dataset:="CHOL.QimingZhang2019.10X"]
-	    mapping.dataset.tb[dataset.old=="CHOL.LichunMa2019",dataset:="CHOL.LichunMa2019"]
-	    mapping.dataset.vec <- structure(mapping.dataset.tb$dataset,names=mapping.dataset.tb$dataset.old)
-	}
-	
-	dat.plot <- dat.long[meta.cluster==mcls & geneID==a.gene,]
-	dat.meta <- gene.desc.top[meta.cluster==mcls & geneSymbol==a.gene,]
+        if(mod.sort==1 || mod.sort==2){
+            mapping.dataset.tb <- unique(data.table(dataset=gene.long.tb$dataset,dataset.old=gene.long.tb$dataset.old))
+            mapping.dataset.tb[dataset.old=="CHOL.YaoHe10X",dataset:="CHOL.QimingZhang2019.10X"]
+            mapping.dataset.tb[dataset.old=="CHOL.LichunMa2019",dataset:="CHOL.LichunMa2019"]
+            mapping.dataset.vec <- structure(mapping.dataset.tb$dataset,names=mapping.dataset.tb$dataset.old)
+        }
+        
+        dat.plot <- dat.long[meta.cluster==mcls & geneID==a.gene,]
+        dat.meta <- gene.desc.top[meta.cluster==mcls & geneSymbol==a.gene,]
 
-	if(mod.sort==1 || mod.sort==2){
-	    dat.plot[,dataset:=gsub("\\.CD[48].+$","",aid)]
-	    dat.plot[,dataset:=mapping.dataset.vec[dataset]]
-	    dat.plot <- dat.plot[,c("aid","geneID","P.Value","adj.P.Val","sig",
-							    "dprime","vardprime","dataset",
-							    "meta.cluster","cancerType"),with=F]
-	    if(mod.sort==1){
-		    tmp.order <- dat.plot[order(-meta.cluster,dprime),]
-	    }else if(mod.sort==2){
-		    tmp.order <- dat.plot[order(-meta.cluster,-dprime),]
-		    dat.plot[,cancerType:=factor(cancerType,levels=rev(unique(tmp.order$cancerType)))]
-		    tmp.order <- dat.plot[order(-meta.cluster,cancerType,dprime),]
-	    }
-	    dat.plot[,dataset:=factor(dataset,levels=c(unique(tmp.order$dataset),"combined"))]
-	    dat.plot[,dataset.cate:="perStudies"]
-	    dat.meta.plot <- data.table(aid="combined",geneID=a.gene,
-							    P.Value=dat.meta$comb.p,
-							    adj.P.Val=dat.meta$comb.padj,
-							    sig=dat.meta$sig,
-							    dprime=dat.meta$comb.ES,
-							    vardprime=dat.meta$comb.ES.sd^2,
-							    dataset="combined",
-							    meta.cluster=mcls,
-							    cancerType="panC",
-							    dataset.cate="combined")
-	}else if(mod.sort==3){
-		dat.plot <- dat.plot[,c("geneID","cancerType","dprime","vardprime",
-								"P.Value","adj.P.Val","sig",
-								"meta.cluster"),with=F]
-		tmp.order <- dat.plot[order(-meta.cluster,sig,dprime),]
-		dat.plot[,cancerType:=factor(cancerType,levels=c(unique(tmp.order$cancerType),"panC"))]
-		dat.meta.plot <- data.table(geneID=a.gene,
-									cancerType="panC",
-									dprime=dat.meta$comb.ES,
-									vardprime=dat.meta$comb.ES.sd^2,
-									P.Value=dat.meta$comb.p,
-									adj.P.Val=dat.meta$comb.padj,
-									sig=dat.meta$sig,
-									meta.cluster=mcls)
-	}
-	dat.plot <- rbind(dat.plot,dat.meta.plot)
-	dat.plot[,lower:=dprime-sqrt(vardprime)]
-	dat.plot[,upper:=dprime+sqrt(vardprime)]
-	dat.plot[,sig:=as.logical(sig)]
-	#### for display purpose
-	dat.plot[sig==F,adj.P.Val:=1]
-	dat.plot[sig==T & adj.P.Val > 0.01,adj.P.Val:=0.01]
-	return(dat.plot)
+        if(mod.sort==1 || mod.sort==2){
+            dat.plot[,dataset:=gsub("\\.CD[48].+$","",aid)]
+            dat.plot[,dataset:=mapping.dataset.vec[dataset]]
+            dat.plot <- dat.plot[,c("aid","geneID","P.Value","adj.P.Val","sig",
+                                    "dprime","vardprime","dataset",
+                                    "meta.cluster","cancerType"),with=F]
+            if(mod.sort==1){
+                tmp.order <- dat.plot[order(-meta.cluster,dprime),]
+            }else if(mod.sort==2){
+                tmp.order <- dat.plot[order(-meta.cluster,-dprime),]
+                dat.plot[,cancerType:=factor(cancerType,levels=rev(unique(tmp.order$cancerType)))]
+                tmp.order <- dat.plot[order(-meta.cluster,cancerType,dprime),]
+            }
+            dat.plot[,dataset:=factor(dataset,levels=c(unique(tmp.order$dataset),"combined"))]
+            dat.plot[,dataset.cate:="perStudies"]
+            dat.meta.plot <- data.table(aid="combined",geneID=a.gene,
+                                    P.Value=dat.meta$comb.p,
+                                    adj.P.Val=dat.meta$comb.padj,
+                                    sig=dat.meta$sig,
+                                    dprime=dat.meta$comb.ES,
+                                    vardprime=dat.meta$comb.ES.sd^2,
+                                    dataset="combined",
+                                    meta.cluster=mcls,
+                                    cancerType="panC",
+                                    dataset.cate="combined")
+        }else if(mod.sort==3){
+            dat.plot <- dat.plot[,c("geneID","cancerType","dprime","vardprime",
+                                    "P.Value","adj.P.Val","sig",
+                                    "meta.cluster"),with=F]
+            tmp.order <- dat.plot[order(-meta.cluster,sig,dprime),]
+            if(sortCancerType=="ES"){
+                dat.plot[,cancerType:=factor(cancerType,levels=c(unique(tmp.order$cancerType),"panC"))]
+            }else{
+                dat.plot[,cancerType:=factor(cancerType,levels=c(unique(sort(tmp.order$cancerType)),"panC"))]
+            }
+            dat.meta.plot <- data.table(geneID=a.gene,
+                                        cancerType="panC",
+                                        dprime=dat.meta$comb.ES,
+                                        vardprime=dat.meta$comb.ES.sd^2,
+                                        P.Value=dat.meta$comb.p,
+                                        adj.P.Val=dat.meta$comb.padj,
+                                        sig=dat.meta$sig,
+                                        meta.cluster=mcls)
+        }
+        dat.plot <- rbind(dat.plot,dat.meta.plot)
+        dat.plot[,lower:=dprime-sqrt(vardprime)]
+        dat.plot[,upper:=dprime+sqrt(vardprime)]
+        dat.plot[,sig:=as.logical(sig)]
+        #### for display purpose
+        dat.plot[sig==F,adj.P.Val:=1]
+        dat.plot[sig==T & adj.P.Val > 0.01,adj.P.Val:=0.01]
+        return(dat.plot)
     }
 
     
@@ -106,10 +115,17 @@ makeFig.ExampleGeneBarplot <- function(gene.to.plot,
 	    }
 	    ###dat.plot.debug <<- dat.plot
 	    vline.x <- NULL
-	    if(mod.sort==3){
+	    if(mod.sort==3 && is.null(cancerTypeOfInterest)){
 		    vline.x <- dat.plot[sig==T,min(as.integer(cancerType))]
 	    }
-    
+   
+        #dat.debug <<- dat.plot 
+        if(!is.null(cancerTypeOfInterest)){
+            dat.plot[,cancerTypeGrp:="Other"]
+            dat.plot[cancerType %in% cancerTypeOfInterest,cancerTypeGrp:="COI"]
+            dat.plot[cancerType %in% "panC",cancerTypeGrp:=""]
+            dat.plot[,cancerTypeGrp:=factor(cancerTypeGrp,levels=c("COI","Other",""))]
+        }
 	    
 	    ###print(vline.x)
 	    p <- ggplot(dat.plot, aes_string(if(mod.sort==3) "cancerType" else "dataset", "dprime")) + 
@@ -142,6 +158,12 @@ makeFig.ExampleGeneBarplot <- function(gene.to.plot,
 		    #p <- p + theme(axis.text.x=element_text(size=10, angle = 90))
 		    
 	    }
+
+        if(!is.null(cancerTypeOfInterest)){
+            p <- p + facet_grid(~cancerTypeGrp,scales="free_x",space="free_x") +
+                        theme(strip.background.x = element_blank())
+        }
+
 	    if(!is.null(vline.x) && is.finite(vline.x)){
 		    p <- p + geom_vline(xintercept=vline.x-0.5,linetype="dashed",color="red",alpha=0.8)
 	    }
@@ -152,9 +174,9 @@ makeFig.ExampleGeneBarplot <- function(gene.to.plot,
     #return(dat.fig.list)
     cowplot::plot_grid(cowplot::plot_grid(plotlist=llply(dat.fig.list,
 							 function(x){ x + theme(legend.position = "none") }),
-					  ncol = ncol),
+					  ncol = ncol,align="hv"),
 		       cowplot::get_legend(dat.fig.list[[1]]),
-		       ncol = 1,rel_heights = c(length(dat.fig.list),0.5))
+		       ncol = 1,rel_heights = c(length(dat.fig.list),rel_h_legend))
 		       
     #saveRDS(dat.fig.list,file=sprintf("%s.cmp.gene.example.fig.rds",out.prefix))
 

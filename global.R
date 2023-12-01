@@ -1,4 +1,7 @@
-.libPaths(c("/workspace/zhengliangtao/04.lib/R/4.0.5","/home/users/zhengliangtao/R/x86_64-pc-linux-gnu-library/4.0"))
+
+#message(sprintf("%s",paste0(.libPaths(),collapse=":")))
+#message(sprintf("%s", gsub(":","\n",Sys.getenv("LD_LIBRARY_PATH")) ))
+#.libPaths(c("/workspace/zhengliangtao/04.lib/R/4.0.5","/home/users/zhengliangtao/R/x86_64-pc-linux-gnu-library/4.0"))
 
 ############ required packages ##############
 getPackage <- function(pkg, check = TRUE, load = TRUE, silent = FALSE, github = NULL) {

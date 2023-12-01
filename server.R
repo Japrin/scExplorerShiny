@@ -18,8 +18,19 @@ my.getPanelList <- function(dat.list,SelectData_dataset){
                                               "cellType","cellSubType",
                                               "globalC","subC"))
   )
+  if("cellType" %in% colnames(colData(sce))){
+      out.list[["cellType"]] <- unique(as.character(sort(sce[["cellType"]])))
+  }else{
+      out.list[["cellType"]] <- NULL
+  }
+  if("cellSubType" %in% colnames(colData(sce))){
+      out.list[["cellSubType"]] <- unique(as.character(sort(sce[["cellSubType"]])))
+  }else{
+      out.list[["cellSubType"]] <- NULL
+  }
   if("loc" %in% colnames(colData(sce))){
-    out.list[["tissue"]] <- c("P","N","T","L")
+    #out.list[["tissue"]] <- c("P","N","T","L")
+    out.list[["tissue"]] <- unique(as.character(sort(sce[["loc"]])))
   }else{
     out.list[["tissue"]] <- NULL
   }
@@ -253,6 +264,10 @@ server <- function(input, output, session) {
     updateSelectizeInput(session, 'Distribution_splitBy',
                          choices = c("None",SubsetData_panel_list$metaInfo.col),
                          selected = "None")
+    updateSelectizeInput(session, 'Heatmap_aveBy',
+                         choices = intersect(c("meta.cluster","cellType","cellSubType","cancerType","dataset"),
+                                             SubsetData_panel_list$metaInfo.col),
+                         selected = "meta.cluster")
     updateCheckboxGroupInput(session, 'Heatmap_colorBy',
                          choices = intersect(c("meta.cluster","cancerType","dataset"),
                                              SubsetData_panel_list$metaInfo.col),
@@ -276,6 +291,18 @@ server <- function(input, output, session) {
       inputId = "SubsetData_meta.cluster",
       choices = SubsetData_panel_list$meta.cluster,
       selected = SubsetData_panel_list$meta.cluster
+    )
+    updatePickerInput(
+      session = session,
+      inputId = "SubsetData_cellType",
+      choices = SubsetData_panel_list$cellType,
+      selected = SubsetData_panel_list$cellType
+    )
+    updatePickerInput(
+      session = session,
+      inputId = "SubsetData_cellSubType",
+      choices = SubsetData_panel_list$cellSubType,
+      selected = SubsetData_panel_list$cellSubType
     )
     updatePickerInput(
       session = session,
@@ -383,8 +410,14 @@ server <- function(input, output, session) {
     sce.ref <- .GlobalEnv$g.dat.list[[InputValue$dataset]][["sce.perMini"]]
     
     f.sce.cell <- (sce.ref[["meta.cluster"]] %in% input$SubsetData_meta.cluster) &
-      (sce.ref[["cancerType"]] %in% input$SubsetData_cancerType) &
+      (sce.ref[["cancerType"]] %in% input$SubsetData_cancerType)
       (sce.ref[["dataset"]] %in% input$SubsetData_study)
+    if(!is.null(input$SubsetData_cellType) & "cellType" %in% colnames(colData(sce.ref))){
+      f.sce.cell <- f.sce.cell & (sce.ref[["cellType"]] %in% input$SubsetData_cellType)
+    }
+    if(!is.null(input$SubsetData_cellSubType) & "cellSubType" %in% colnames(colData(sce.ref))){
+      f.sce.cell <- f.sce.cell & (sce.ref[["cellSubType"]] %in% input$SubsetData_cellSubType)
+    }
     if(!is.null(input$SubsetData_tissue) && "loc" %in% colnames(colData(sce.ref)) ){
       f.sce.cell <- f.sce.cell & (sce.ref[["loc"]] %in% input$SubsetData_tissue)
     }
@@ -754,8 +787,9 @@ server <- function(input, output, session) {
   ####################### Heatmap #########################
   output$Heatmap_plot <- renderPlot({
     if(InputValue$ngene.show>1){
-      choice.ave.by <- c("meta.cluster","cancerType","dataset")
-      used.ave.by <- choice.ave.by[seq_len(match(input$Heatmap_aveBy,choice.ave.by))]
+      choice.ave.by <- c("meta.cluster","cellType","cellSubType","cancerType","dataset")
+      #used.ave.by <- choice.ave.by[seq_len(match(input$Heatmap_aveBy,choice.ave.by))]
+      used.ave.by <- choice.ave.by[(match(input$Heatmap_aveBy,choice.ave.by))]
 
       if(input$Heatmap_do_scale=="Yes"){
           sce.plot.z <- ssc.scale(InputValue$sce.plot,
@@ -772,7 +806,8 @@ server <- function(input, output, session) {
                        ##ave.by = if(input$Heatmap_aveby==F) NULL else  c("meta.cluster","cancerType","dataset"),
                        ave.by = used.ave.by,
                        columns = used.ave.by,
-                       columns.order = "meta.cluster",
+                       #columns.order = "meta.cluster",
+                       ###columns.order = used.ave.by,
                        column.split = NULL,do.scale = F,
                        do.clustering.row = input$Heatmap_clustering_row,
                        do.clustering.col = input$Heatmap_clustering_col,

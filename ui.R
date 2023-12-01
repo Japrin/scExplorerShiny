@@ -582,6 +582,7 @@ body <- dashboardBody(
                                selectInput(
                                  inputId = "Heatmap_aveBy",
                                  label = "Average by",
+                                 #choices = c("meta.cluster","cellType","cellSubType","cancerType","dataset"),
                                  choices = c("meta.cluster","cancerType","dataset"),
                                  selected = "meta.cluster"
                                ),
@@ -1080,6 +1081,28 @@ body <- dashboardBody(
                          pickerInput(
                            inputId = "SubsetData_meta.cluster",
                            label = "Meta-Cluster",
+                           choices = NULL,
+                           multiple = TRUE,
+                           options = list(
+                             `actions-box` = TRUE,
+                             `live-search` = TRUE,
+                             size = 8
+                           )
+                         ),
+                         pickerInput(
+                           inputId = "SubsetData_cellType",
+                           label = "CellType",
+                           choices = NULL,
+                           multiple = TRUE,
+                           options = list(
+                             `actions-box` = TRUE,
+                             `live-search` = TRUE,
+                             size = 8
+                           )
+                         ),
+                         pickerInput(
+                           inputId = "SubsetData_cellSubType",
+                           label = "CellSubType",
                            choices = NULL,
                            multiple = TRUE,
                            options = list(

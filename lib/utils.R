@@ -6,14 +6,25 @@ reformatData <- function(sce=NULL,meta.tb=NULL,colSet=NULL,geneDesc.tb=NULL)
             ("majorCluster" %in% colnames(colData(sce)))){
             sce[["meta.cluster"]] <- sce[["majorCluster"]]
         }
+        if(!("cellType" %in% colnames(colData(sce)))){
+            sce[["cellType"]] <- sce[["meta.cluster"]]
+        }
+        if(!("cellSubType" %in% colnames(colData(sce)))){
+            sce[["cellSubType"]] <- sce[["meta.cluster"]]
+        }
         if(! "exprs" %in% assayNames(sce)){
             assay(sce,"exprs") <- assay(sce,"norm_exprs")
+        }
+        if(is.null(rowData(sce)[["display.name"]])){
+            rowData(sce)[["display.name"]] <- rownames(sce)
         }
         if(! "u.UMAP" %in% reducedDimNames(sce)){
             if("harmony.umap" %in% reducedDimNames(sce)){
                 reducedDim(sce,"u.UMAP") <- reducedDim(sce,"harmony.umap")
             }else if("seurat.umap" %in% reducedDimNames(sce)){
                 reducedDim(sce,"u.UMAP") <- reducedDim(sce,"seurat.umap")
+            }else if("X_umap" %in% reducedDimNames(sce)){
+                reducedDim(sce,"u.UMAP") <- reducedDim(sce,"X_umap")
             }else{
                 reducedDim(sce,"u.UMAP") <- reducedDim(sce,reducedDimNames(sce)[1])
             }
